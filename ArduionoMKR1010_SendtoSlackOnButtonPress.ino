@@ -4,8 +4,8 @@
 
 
 // Replace with your network credentials
-const char* wifiname     = "WIFI";
-const char* wifipassword = "PASSWORD";
+const char* wifiname     = "Wifi";
+const char* wifipassword = "wifipassword";
 // List of sales related messages
 String salesMessages[] = {
   "Et salg har blitt gjort", 
@@ -26,14 +26,14 @@ String salesMessages[] = {
 
 
 // // Add your MQTT Broker IP address, Port, User and Password
-const char* mqtt_server = "MQTTBROKER";
+const char* mqtt_server = "mqttbroker";
 const int mqtt_port = 1888;
-const char* mqtt_user = "username";
-const char* mqtt_password = "pasword";
+const char* mqtt_user = "user";
+const char* mqtt_password = "password";
 
 // HTTP server to send the POST request
 char serverAddress[] = "hooks.slack.com";
-char uri[] = "/services/TWebHookUrl"; // your Webhook URL
+char uri[] = "/services/webhook"; // your Webhook URL
 
 // Button connected to pin 2
 const int buttonPin = 2;
@@ -51,7 +51,7 @@ void setup() {
   pinMode(buttonPin, INPUT_PULLDOWN);
   pinMode(ledPin, OUTPUT);  // Set the LED pin as output
  
-  WiFi.begin(wifiname, wifipassword);
+   WiFi.begin(wifiname, wifipassword);
 
 }
 
