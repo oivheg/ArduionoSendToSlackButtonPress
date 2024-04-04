@@ -4,8 +4,8 @@
 
 
 // Replace with your network credentials
-const char* ssid     = "WIFI";
-const char* password = "PASSWORD";
+const char* wifiname     = "WIFI";
+const char* wifipassword = "PASSWORD";
 // List of sales related messages
 String salesMessages[] = {
   "Et salg har blitt gjort", 
@@ -24,9 +24,16 @@ String salesMessages[] = {
   "We have a new sale"
 };
 
+
+// // Add your MQTT Broker IP address, Port, User and Password
+const char* mqtt_server = "MQTTBROKER";
+const int mqtt_port = 1888;
+const char* mqtt_user = "username";
+const char* mqtt_password = "pasword";
+
 // HTTP server to send the POST request
 char serverAddress[] = "hooks.slack.com";
-char uri[] = "/services/webhoocklink"; // your Webhook URL
+char uri[] = "/services/TWebHookUrl"; // your Webhook URL
 
 // Button connected to pin 2
 const int buttonPin = 2;
@@ -35,23 +42,25 @@ int buttonState = 0;
 const int ledPin = 3;
 
 WiFiSSLClient  wifi;
+WiFiClient wifiNoSLL;
 HttpClient client = HttpClient(wifi, serverAddress, 443);
-
+PubSubClient mqtt(wifiNoSLL);
 
 void setup() {
   Serial.begin(9600);
   pinMode(buttonPin, INPUT_PULLDOWN);
   pinMode(ledPin, OUTPUT);  // Set the LED pin as output
-
-  WiFi.begin(ssid, password);
+ 
+  WiFi.begin(wifiname, wifipassword);
 
 }
+
 
 
 void setup_wifi() {
   Serial.println("WIFI Connecting");
   // Connect to WiFi network
-  WiFi.begin(ssid, password);
+  WiFi.begin(wifiname, wifipassword);
   delay(2000);
   unsigned long startTime = millis();
   int attempts = 0;
@@ -86,21 +95,60 @@ void setup_wifi() {
 }
 
 void loop() {
-  // Check if button is pressed
-  buttonState = digitalRead(buttonPin);
-  Serial.println(buttonState);
-  if (buttonState == HIGH) {
-     digitalWrite(ledPin, HIGH);  // Turn on the LED
-    // Check if WiFi is already connected
-    if (WiFi.status() != WL_CONNECTED) {
-      // Reconnect to WiFi
-      setup_wifi();
+    // Check if button is pressed
+    buttonState = digitalRead(buttonPin);
+    Serial.println(buttonState);
+
+    if (buttonState == HIGH) {
+        digitalWrite(ledPin, HIGH); // Turn on the LED
+
+        // Check if WiFi is already connected
+        if (WiFi.status() != WL_CONNECTED) {
+            setup_wifi(); // Reconnect to WiFi
+        }
+
+        if (!mqtt.connected()) {
+            connectmqtt();
+        }
+        mqtt.loop();
+
+        // Send MQTT message to trigger remoteBlinker
+
+        // Post data
+        postData();
+
+        // Disconnect from WiFi
+        WiFi.disconnect();
+        digitalWrite(ledPin, LOW); // Turn off the LED
     }
-    // Post data
-    postData();
-    // Disconnect from WiFi
-    WiFi.disconnect();
-    digitalWrite(ledPin, LOW);  // Turn off the LED
+
+    // Non-blocking delay using millis()
+    static unsigned long previousMillis = 0;
+    const unsigned long interval = 1000; // 1 second interval
+
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillis >= interval) {
+        previousMillis = currentMillis;
+        // Other tasks can run here without blocking
+    }
+}
+
+void connectmqtt() {
+  // Loop until we're reconnected
+   mqtt.setServer(mqtt_server, mqtt_port);
+  while (!mqtt.connected()) {
+    Serial.print("Attempting MQTT connection...");
+    // Attempt to connect
+    Serial.println(WiFi.status());
+    if (mqtt.connect("ESP8266Client", mqtt_user, mqtt_password)) {
+      Serial.println("MQTTconnected");
+      mqtt.publish("remoteblinker/on", "notRelevant");
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(mqtt.state());
+      Serial.println(" try again in 5 seconds");
+      // Wait 5 seconds before retrying
+      delay(5000);
+    }
   }
-      delay(1000);
 }
